@@ -1,0 +1,122 @@
+#!/bin/bash
+
+# Validate course ID format
+validate_id() {
+  id=$1
+  pattern="^[a-z]{4}[0-9]{3}$"
+  if [[ $id =~ $pattern ]]; then
+    return 0
+  else
+    return 1
+  fi
+}
+
+# Validate ISBN format
+validate_isbn() {
+  isbn=$1
+  pattern="^[0-9]{2}-[0-9]{3}-[0-9]{5}$"
+  if [[ $isbn =~ $pattern ]]; then
+    return 0
+  else
+    return 1
+  fi
+}
+
+# Main script
+while true; do
+  echo "====== My Courses Menu ======"
+  echo "1. Add Course"
+  echo "2. Modify Course"
+  echo "3. Search Courses"
+  echo "4. Print Courses"
+  echo "5. Exit"
+  echo "============================"
+
+  read -p "Enter your choice (1-5): " choice
+
+  case $choice in
+    1)
+      echo "Adding a new course..."
+
+      # Prompt for Course ID
+      read -p "Enter Course ID: " course_id
+      while ! validate_id "$course_id"; do
+        read -p "Invalid Course ID format. Enter Course ID: " course_id
+      done
+
+      # Prompt for Full Name
+      read -p "Enter Full Name: " full_name
+
+      # Prompt for Book ISBN
+      read -p "Enter Book ISBN: " isbn
+      while ! validate_isbn "$isbn"; do
+        read -p "Invalid ISBN format. Enter Book ISBN: " isbn
+      done
+
+      # Add course to the contacts file
+      echo "$course_id|$full_name|$isbn" >> courses
+      echo "Course added successfully!"
+      ;;
+    2)
+      echo "Modifying a course..."
+      echo "1. Delete a Course"
+      echo "2. Modify Course Info"
+      read -p "Enter your choice (1-2): " sub_choice
+      case $sub_choice in
+        1)
+          echo "Deleting a course..."
+          read -p "Enter Course ID to delete: " course_id
+          if grep -q "^$course_id" courses; then
+            sed -i "/^$course_id/d" courses
+            echo "Course deleted successfully!"
+          else
+            echo "Course ID not found!"
+          fi
+          ;;
+        2)
+          echo "Modifying Course Info..."
+          read -p "Enter Course ID to modify: " course_id
+          if grep -q "^$course_id" courses; then
+            read -p "Enter new ISBN: " new_isbn
+            while ! validate_isbn "$new_isbn"; do
+              read -p "Invalid ISBN format. Enter new ISBN: " new_isbn
+            done
+            sed -i "s/^$course_id.*/$course_id|$new_isbn/" courses
+            echo "Course modified successfully!"
+          else
+            echo "Course ID not found!"
+          fi
+          ;;
+        *)
+          echo "Invalid choice!"
+          ;;
+      esac
+      ;;
+    3)
+      echo "Searching for a course..."
+      read -p "Enter Course ID to search: " course_id
+      if grep -q "^$course_id" courses; then
+        grep "^$course_id" courses | awk -F "|" '{ printf "Course ID: %s\nFull Name: %s\nISBN: %s\n", $1, $2, $3 }'
+      else
+        echo "Course ID not found!"
+      fi
+      ;;
+    4)
+      echo "Printing all courses..."
+      if [[ -s courses ]]; then
+        cat courses
+      else
+        echo "No courses found!"
+      fi
+      ;;
+    5)
+      echo "Exiting..."
+      exit 0
+      ;;
+    *)
+      echo "Invalid choice!"
+      ;;
+  esac
+
+  echo
+done
